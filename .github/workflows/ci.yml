@@ -38,7 +38,8 @@ jobs:
 
       - name: Set image owner (lowercase)
         run: |
-          echo "IMAGE_OWNER=$(echo '${GITHUB_REPOSITORY_OWNER}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          OWNER=${{ github.repository_owner }}
+          echo "IMAGE_OWNER=$(echo \"$OWNER\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
       - name: Build and push Docker image to GHCR
         run: |
