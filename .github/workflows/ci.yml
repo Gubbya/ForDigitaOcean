@@ -19,6 +19,21 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: ./hello_world
+          file: ./hello_world/Dockerfile
+          push: false
+          load: true
+          tags: fordigitaocean/hello:${{ github.sha }}
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
