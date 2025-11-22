@@ -39,7 +39,14 @@ jobs:
       - name: Set image owner (lowercase)
         run: |
           OWNER=${{ github.repository_owner }}
-          echo "IMAGE_OWNER=$(echo \"$OWNER\" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+          LOWER_OWNER=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          printf "IMAGE_OWNER=%s\n" "$LOWER_OWNER" >> $GITHUB_ENV
+
+      - name: Debug image owner and tags
+        run: |
+          echo "IMAGE_OWNER=$IMAGE_OWNER"
+          echo "TAG1=ghcr.io/$IMAGE_OWNER/fordigitaocean-hello:$GITHUB_SHA"
+          echo "TAG2=ghcr.io/$IMAGE_OWNER/fordigitaocean-hello:latest"
 
       - name: Build and push Docker image to GHCR
         run: |
