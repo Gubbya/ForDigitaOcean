@@ -7,4 +7,6 @@ RUN if [ -f requirements.txt ]; then python -m pip install --upgrade pip && pip 
 
 COPY . .
 
+EXPOSE 8000
+
 CMD ["python", "hello.py"]

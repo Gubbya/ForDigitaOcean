@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  hello:
+    image: ghcr.io/gubbya/fordigitaocean-hello:latest
+    # Uncomment the build section if you prefer to build on the Droplet instead of pulling from GHCR
+    # build:
+    #   context: ./hello_world
+    #   dockerfile: ./hello_world/Dockerfile
+    ports:
+      - "80:8000"   # map host port 80 to container port 8000
+    restart: unless-stopped
+    environment:
+      - PORT=8000
