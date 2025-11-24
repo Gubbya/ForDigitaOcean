@@ -7,8 +7,14 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN if [ -f requirements.txt ]; then \
 			python -m pip install --upgrade pip && \
-			pip install --no-cache-dir -r requirements.txt; \
+	pip install --no-cache-dir -r requirements.txt; \
 		fi
+
+# Install curl so container-local healthchecks that use `curl` succeed.
+# Using the slim image means curl isn't available by default.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 # Copy only application files. A .dockerignore at the repo root helps keep the context small.
 COPY . .
