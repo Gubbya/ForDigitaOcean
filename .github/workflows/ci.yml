@@ -217,15 +217,22 @@ jobs:
   debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Show last 50 lines of the terminal
+      - name: Show last 50 lines of runner profile and shell rc
         run: |
-          Get-Content -Path $PROFILE -ErrorAction SilentlyContinue | Select-Object -Last 50
+          # show runner profile files if present (best-effort)
+          if [ -f ~/.profile ]; then echo "=== ~/.profile (last 50 lines) ==="; tail -n 50 ~/.profile || true; fi
+          if [ -f ~/.bashrc ]; then echo "=== ~/.bashrc (last 50 lines) ==="; tail -n 50 ~/.bashrc || true; fi
 
-      - name: Show recent GitHub Actions workflow runs
+      - name: Show recent GitHub Actions workflow runs (via API)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh run list --repo Gubbya/ForDigitaOcean --limit 5
+          # the runner may not have the gh CLI installed; use the Actions API as a fallback
+          echo "Listing recent workflow runs (raw JSON, truncated)"
+          curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/runs?per_page=5" | sed -n '1,200p' || true
 
       - name: Show docker status locally
         run: |
-          docker --version
-          docker ps -a
+          docker --version || true
+          docker ps -a || true
