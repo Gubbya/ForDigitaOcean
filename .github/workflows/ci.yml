@@ -68,3 +68,50 @@ jobs:
       - name: Run hello script
         working-directory: hello_world
         run: python hello.py
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Deploy to Droplet via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            # install docker if missing
+            if ! command -v docker >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y ca-certificates curl gnupg lsb-release
+              curl -fsSL https://get.docker.com | sh
+            fi
+
+            # install compose plugin if missing
+            if ! docker compose version >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y docker-compose-plugin
+            fi
+
+            APP_DIR=/opt/ForDigitaOcean
+            if [ -d "$APP_DIR" ]; then
+              cd "$APP_DIR"
+              git fetch --all
+              git reset --hard origin/main
+            else
+              git clone https://github.com/Gubbya/ForDigitaOcean.git "$APP_DIR"
+              cd "$APP_DIR"
+            fi
+
+            # login to GHCR if provided
+            if [ -n "${GHCR_PAT}" ]; then
+              echo "${GHCR_PAT}" | docker login ghcr.io -u Gubbya --password-stdin
+            fi
+
+            docker compose pull || true
+            docker compose up -d --build
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
