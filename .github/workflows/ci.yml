@@ -7,7 +7,7 @@ permissions:
 on:
   workflow_dispatch: {}
   push:
-    branches: [ main, mster ]
+    branches: [ main, master, staging ]
   pull_request:
     branches: [ main ]
 
@@ -158,7 +158,7 @@ jobs:
   deploy-staging:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/mster' || github.ref == 'refs/heads/staging'
+    if: github.ref == 'refs/heads/staging'
     steps:
       - name: Deploy to Staging Droplet via SSH
         uses: appleboy/ssh-action@v0.1.7
@@ -187,12 +187,12 @@ jobs:
               cd "$APP_DIR"
               git fetch --all
               # checkout the staging branch if present
-              git checkout -f mster || git checkout -f staging || true
-              git reset --hard origin/mster || git reset --hard origin/staging || true
+              git checkout -f staging || true
+              git reset --hard origin/staging || true
             else
               git clone https://github.com/Gubbya/ForDigitaOcean.git "$APP_DIR"
               cd "$APP_DIR"
-              git checkout -f mster || git checkout -f staging || true
+              git checkout -f staging || true
             fi
 
             # login to GHCR if provided
@@ -204,3 +204,19 @@ jobs:
             docker compose up -d --build
         env:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show last 50 lines of the terminal
+        run: |
+          Get-Content -Path $PROFILE -ErrorAction SilentlyContinue | Select-Object -Last 50
+
+      - name: Show recent GitHub Actions workflow runs
+        run: |
+          gh run list --repo Gubbya/ForDigitaOcean --limit 5
+
+      - name: Show docker status locally
+        run: |
+          docker --version
+          docker ps -a
