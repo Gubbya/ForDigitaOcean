@@ -1,6 +1,6 @@
 services:
   hello:
-    image: ghcr.io/gubbya/fordigitaocean-hello:latest
+    image: ${HELLO_IMAGE:-ghcr.io/gubbya/fordigitaocean-hello:latest}
     # ------------------------------------------------------------------
     # Notes:
     # - The image is pulled from GHCR. If your image is private, the deploy
@@ -10,8 +10,10 @@ services:
     # build:
     #   context: ./hello_world
     #   dockerfile: ./hello_world/Dockerfile
-    ports:
-      - "80:8000"   # map host port 80 to container port 8000 (host:container)
+    # Do not publish the application directly on the host. Let the reverse
+    # proxy (nginx) listen on public ports and proxy to the internal service.
+    expose:
+      - "8000"   # expose container port to other services on the same network
     restart: unless-stopped
     healthcheck:
       # Use a simple HTTP healthcheck; Docker Compose will use this to
@@ -22,3 +24,30 @@ services:
       retries: 3
     environment:
       - PORT=8000
+
+  nginx:
+    image: ${NGINX_IMAGE:-nginx:stable}
+    depends_on:
+      - hello
+    # nginx listens on the host public ports; it proxies to the `hello` service
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # Place TLS certs in ./nginx/certs (fullchain.pem + privkey.pem) if you
+      # want to enable TLS termination; otherwise nginx will serve plaintext on 80.
+      - ./nginx/certs:/etc/nginx/certs:ro
+      # Optionally add a volume for ACME challenge files if you run certbot.
+      - ./nginx/www:/var/www/certbot:rw
+      # Persist nginx logs to the host so logs survive container recreation
+      - ./nginx/logs:/var/log/nginx:rw
+    restart: unless-stopped
+
+networks:
+  default:
+    name: fordigitaocean_default
+
+# Labels are used to provide metadata for each service image. They will be
+# populated from the `.env` file when present. Developers should pin images
+# by updating the variables in `.env` to a specific tag (e.g. `:v1.0.0`).
