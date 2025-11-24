@@ -162,8 +162,62 @@ jobs:
 
             docker compose pull || true
             docker compose up -d --build
+
+            # wait for the 'hello' service to become healthy (timeout configurable)
+            SERVICE_NAME=hello
+            TIMEOUT=60
+            SLEEP=2
+            RETRIES=$((TIMEOUT / SLEEP))
+            CONTAINER_ID=$(docker compose ps -q "$SERVICE_NAME")
+            if [ -n "$CONTAINER_ID" ]; then
+              echo "Waiting up to ${TIMEOUT}s for $SERVICE_NAME to become healthy..."
+              HEALTH=""
+              for i in $(seq 1 $RETRIES); do
+                HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-health{{end}}' "$CONTAINER_ID" 2>/dev/null || true)
+                echo "Attempt $i/$RETRIES - health: ${HEALTH}"
+                if [ "$HEALTH" = "healthy" ]; then
+                  echo "$SERVICE_NAME is healthy"
+                  break
+                fi
+                sleep $SLEEP
+              done
+              if [ "$HEALTH" != "healthy" ]; then
+                echo "ERROR: $SERVICE_NAME failed to become healthy within ${TIMEOUT}s. Current health: ${HEALTH}"
+                docker logs --tail 200 "$CONTAINER_ID" || true
+                exit 1
+              fi
+            fi
+
+            # If domain and email are provided, try to obtain TLS certs via certbot
+            if [ -n "${DROPLET_DOMAIN}" ] && [ -n "${CERTBOT_EMAIL}" ]; then
+              echo "DROPLET_DOMAIN and CERTBOT_EMAIL provided — attempting certbot issuance if needed"
+              mkdir -p ./nginx/certs ./nginx/www
+              # if certs for domain not present, run certbot
+              if [ ! -d "./nginx/certs/live/${DROPLET_DOMAIN}" ]; then
+                echo "Requesting certificates for ${DROPLET_DOMAIN}"
+                docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d "${DROPLET_DOMAIN}" --email "${CERTBOT_EMAIL}" --agree-tos --non-interactive || true
+                # render ssl.conf from template
+                if [ -f ./nginx/ssl.conf.template ]; then
+                  sed 's/{{DOMAIN}}/'"${DROPLET_DOMAIN}"'/g' ./nginx/ssl.conf.template > ./nginx/ssl.conf
+                fi
+                # reload nginx to pick up new certs and ssl.conf
+                docker compose up -d --no-deps --build nginx || true
+                # try an nginx config test and reload
+                NGINX_CID=$(docker compose ps -q nginx)
+                if [ -n "$NGINX_CID" ]; then
+                  docker exec "$NGINX_CID" nginx -t || true
+                  docker exec "$NGINX_CID" nginx -s reload || true
+                fi
+              else
+                echo "Certificates already present for ${DROPLET_DOMAIN}, skipping issuance"
+              fi
+            else
+              echo "DROPLET_DOMAIN or CERTBOT_EMAIL not set; skipping certbot issuance"
+            fi
         env:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          DROPLET_DOMAIN: ${{ secrets.DROPLET_DOMAIN }}
+          CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
 
   deploy-staging:
     needs: build
@@ -212,8 +266,58 @@ jobs:
 
             docker compose pull || true
             docker compose up -d --build
+
+            # wait for the 'hello' service to become healthy (timeout configurable)
+            SERVICE_NAME=hello
+            TIMEOUT=60
+            SLEEP=2
+            RETRIES=$((TIMEOUT / SLEEP))
+            CONTAINER_ID=$(docker compose ps -q "$SERVICE_NAME")
+            if [ -n "$CONTAINER_ID" ]; then
+              echo "Waiting up to ${TIMEOUT}s for $SERVICE_NAME to become healthy..."
+              HEALTH=""
+              for i in $(seq 1 $RETRIES); do
+                HEALTH=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no-health{{end}}' "$CONTAINER_ID" 2>/dev/null || true)
+                echo "Attempt $i/$RETRIES - health: ${HEALTH}"
+                if [ "$HEALTH" = "healthy" ]; then
+                  echo "$SERVICE_NAME is healthy"
+                  break
+                fi
+                sleep $SLEEP
+              done
+              if [ "$HEALTH" != "healthy" ]; then
+                echo "ERROR: $SERVICE_NAME failed to become healthy within ${TIMEOUT}s. Current health: ${HEALTH}"
+                docker logs --tail 200 "$CONTAINER_ID" || true
+                exit 1
+              fi
+            fi
+
+            # If domain and email are provided, try to obtain TLS certs via certbot
+            if [ -n "${DROPLET_DOMAIN}" ] && [ -n "${CERTBOT_EMAIL}" ]; then
+              echo "DROPLET_DOMAIN and CERTBOT_EMAIL provided — attempting certbot issuance if needed"
+              mkdir -p ./nginx/certs ./nginx/www
+              if [ ! -d "./nginx/certs/live/${DROPLET_DOMAIN}" ]; then
+                echo "Requesting certificates for ${DROPLET_DOMAIN}"
+                docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d "${DROPLET_DOMAIN}" --email "${CERTBOT_EMAIL}" --agree-tos --non-interactive || true
+                if [ -f ./nginx/ssl.conf.template ]; then
+                  sed 's/{{DOMAIN}}/'"${DROPLET_DOMAIN}"'/g' ./nginx/ssl.conf.template > ./nginx/ssl.conf
+                fi
+                docker compose up -d --no-deps --build nginx || true
+                NGINX_CID=$(docker compose ps -q nginx)
+                if [ -n "$NGINX_CID" ]; then
+                  docker exec "$NGINX_CID" nginx -t || true
+                  docker exec "$NGINX_CID" nginx -s reload || true
+                fi
+              else
+                echo "Certificates already present for ${DROPLET_DOMAIN}, skipping issuance"
+              fi
+            else
+              echo "DROPLET_DOMAIN or CERTBOT_EMAIL not set; skipping certbot issuance"
+            fi
         env:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          DROPLET_DOMAIN: ${{ secrets.DROPLET_DOMAIN }}
+          CERTBOT_EMAIL: ${{ secrets.CERTBOT_EMAIL }}
 
   debug:
     runs-on: ubuntu-latest
