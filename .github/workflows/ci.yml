@@ -2,7 +2,7 @@
 name: CI ✅ ⚠️ ❌ 🚨
 
 permissions:
-  contents: r
+  contents: read
   packages: write
 
 on:
@@ -75,10 +75,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          # Note: This uses the GITHUB_TOKEN for pushing images within the same repo.
-          # If you need to pull private images from another account on the droplet,
-          # configure a repository secret `GHCR_PAT` with `packages:read` and use that
-          # in the remote deploy step to `docker login` on the server.
 
       - name: Set image owner (lowercase)
         run: |
@@ -160,9 +156,6 @@ jobs:
             fi
 
             # login to GHCR if provided
-            # Security: GHCR_PAT should be stored in GitHub Secrets and passed via
-            # the `env` mapping (see workflow). Ensure the PAT has only the
-            # minimal `packages:read` permission required for pulling images.
             if [ -n "${GHCR_PAT}" ]; then
               echo "${GHCR_PAT}" | docker login ghcr.io -u Gubbya --password-stdin
             fi
