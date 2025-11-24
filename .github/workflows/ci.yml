@@ -12,7 +12,45 @@ on:
     branches: [ main ]
 
 jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: python
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Run CodeQL analysis
+        uses: github/codeql-action/analyze@v2
+
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install linters
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+
+      - name: Run flake8
+        run: |
+          flake8 hello_world || true
+
   build:
+    needs: [security-scan, code-quality]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -104,6 +142,56 @@ jobs:
             else
               git clone https://github.com/Gubbya/ForDigitaOcean.git "$APP_DIR"
               cd "$APP_DIR"
+            fi
+
+            # login to GHCR if provided
+            if [ -n "${GHCR_PAT}" ]; then
+              echo "${GHCR_PAT}" | docker login ghcr.io -u Gubbya --password-stdin
+            fi
+
+            docker compose pull || true
+            docker compose up -d --build
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+
+  deploy-staging:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/mster' || github.ref == 'refs/heads/staging'
+    steps:
+      - name: Deploy to Staging Droplet via SSH
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.DROPLET_HOST }}
+          username: ${{ secrets.DROPLET_USER }}
+          key: ${{ secrets.DROPLET_SSH_KEY }}
+          port: 22
+          script: |
+            set -e
+            # install docker if missing
+            if ! command -v docker >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y ca-certificates curl gnupg lsb-release
+              curl -fsSL https://get.docker.com | sh
+            fi
+
+            # install compose plugin if missing
+            if ! docker compose version >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y docker-compose-plugin
+            fi
+
+            APP_DIR=/opt/ForDigitaOcean
+            if [ -d "$APP_DIR" ]; then
+              cd "$APP_DIR"
+              git fetch --all
+              # checkout the staging branch if present
+              git checkout -f mster || git checkout -f staging || true
+              git reset --hard origin/mster || git reset --hard origin/staging || true
+            else
+              git clone https://github.com/Gubbya/ForDigitaOcean.git "$APP_DIR"
+              cd "$APP_DIR"
+              git checkout -f mster || git checkout -f staging || true
             fi
 
             # login to GHCR if provided
