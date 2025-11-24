@@ -10,6 +10,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/plain; charset=utf-8")
         self.end_headers()
         self.wfile.write(b"Hello, world!\n")
+        self.wfile.write(b"Hello, world! 2 \n")
 
 
 def run():
