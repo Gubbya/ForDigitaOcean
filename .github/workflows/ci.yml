@@ -1,7 +1,8 @@
-name: CI
+ # Symbols: ❌ ⚠️ ✅ 🚨 📺 📋 ℹ️
+name: CI ✅ ⚠️ ❌ 🚨
 
 permissions:
-  contents: read
+  contents: r
   packages: write
 
 on:
@@ -74,6 +75,10 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          # Note: This uses the GITHUB_TOKEN for pushing images within the same repo.
+          # If you need to pull private images from another account on the droplet,
+          # configure a repository secret `GHCR_PAT` with `packages:read` and use that
+          # in the remote deploy step to `docker login` on the server.
 
       - name: Set image owner (lowercase)
         run: |
@@ -155,6 +160,9 @@ jobs:
             fi
 
             # login to GHCR if provided
+            # Security: GHCR_PAT should be stored in GitHub Secrets and passed via
+            # the `env` mapping (see workflow). Ensure the PAT has only the
+            # minimal `packages:read` permission required for pulling images.
             if [ -n "${GHCR_PAT}" ]; then
               echo "${GHCR_PAT}" | docker login ghcr.io -u Gubbya --password-stdin
             fi
@@ -217,13 +225,13 @@ jobs:
   debug:
     runs-on: ubuntu-latest
     steps:
-      - name: Show last 50 lines of runner profile and shell rc
+      - name: 📋 Show last 50 lines of runner profile and shell rc
         run: |
           # show runner profile files if present (best-effort)
           if [ -f ~/.profile ]; then echo "=== ~/.profile (last 50 lines) ==="; tail -n 50 ~/.profile || true; fi
           if [ -f ~/.bashrc ]; then echo "=== ~/.bashrc (last 50 lines) ==="; tail -n 50 ~/.bashrc || true; fi
 
-      - name: Show recent GitHub Actions workflow runs (via API)
+      - name: 📺 Show recent GitHub Actions workflow runs (via API)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -232,7 +240,7 @@ jobs:
           curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/actions/runs?per_page=5" | sed -n '1,200p' || true
 
-      - name: Show docker status locally
+      - name: ℹ️ Show docker status locally
         run: |
           docker --version || true
           docker ps -a || true

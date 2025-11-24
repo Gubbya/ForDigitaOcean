@@ -1,27 +1,39 @@
 # Hello World (Python)
 
-Simple Hello World project in Python.
+Simple Hello World project in Python. This project is intentionally tiny
+and used primarily for CI, container build, and deployment demonstrations.
 
-## Run
+Important notes
+---------------
+- This example app is a minimal HTTP server for demo and smoke-test purposes.
+- Do not use this server directly in production; use a proper WSGI server and
+	reverse proxy for performance, security and proper process management.
+- Secrets (SSH keys, PATs) must never be committed to source; store them in
+	GitHub Secrets and reference them in CI as shown in the repository workflow.
 
-Windows PowerShell:
+Run locally (PowerShell)
+------------------------
 
 ```powershell
 Set-Location -LiteralPath 'd:\digitalocean\ForDigitaOcean\hello_world'
 python hello.py
 ```
 
-## Git
-
-This repo is initialized locally. To push to a remote:
+Build Docker image locally
+--------------------------
 
 ```powershell
-cd d:\digitalocean\ForDigitaOcean\hello_world
-git remote add origin <REMOTE_URL>
-git branch -M main
-git push -u origin main
+# from repo root
+docker build -f hello_world/Dockerfile -t fordigitaocean-hello:local hello_world
+docker run -p 8000:8000 fordigitaocean-hello:local
 ```
 
-Replace `<REMOTE_URL>` with your repository URL (e.g., `https://github.com/username/repo.git`).
+CI / Deployment
+---------------
+This repository contains a GitHub Actions workflow (`.github/workflows/ci.yml`) that:
+- runs basic static checks (flake8),
+- builds a multi-arch image with `docker buildx`,
+- optionally pushes to GHCR and deploys to a DigitalOcean droplet via SSH.
 
-[ci test] 2025-11-22T22:33:20.0313331+05:30
+If you change deployment secrets or keys, rotate them and update GitHub Secrets.
+

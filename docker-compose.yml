@@ -1,14 +1,21 @@
 services:
   hello:
     image: ghcr.io/gubbya/fordigitaocean-hello:latest
-    # Uncomment the build section if you prefer to build on the Droplet instead of pulling from GHCR
+    # ------------------------------------------------------------------
+    # Notes:
+    # - The image is pulled from GHCR. If your image is private, the deploy
+    #   process must `docker login` with a PAT that has `packages:read`.
+    # - If you prefer building on the Droplet, uncomment the `build` section.
+    # ------------------------------------------------------------------
     # build:
     #   context: ./hello_world
     #   dockerfile: ./hello_world/Dockerfile
     ports:
-      - "80:8000"   # map host port 80 to container port 8000
+      - "80:8000"   # map host port 80 to container port 8000 (host:container)
     restart: unless-stopped
     healthcheck:
+      # Use a simple HTTP healthcheck; Docker Compose will use this to
+      # determine container health for restarts and orchestration.
       test: ["CMD", "curl", "-f", "http://localhost:8000/ || exit 1"]
       interval: 30s
       timeout: 5s

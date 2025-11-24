@@ -1,0 +1,16 @@
+# Ignore files that should not be sent to Docker build context
+__pycache__/
+*.pyc
+.git/
+.github/
+node_modules/
+.venv/
+venv/
+.env
+.env.*
+Dockerfile
+docker-compose.yml
+*.md
+.vscode/
+.idea/
+.DS_Store
