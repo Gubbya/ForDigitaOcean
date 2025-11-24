@@ -18,7 +18,8 @@ services:
     healthcheck:
       # Use a simple HTTP healthcheck; Docker Compose will use this to
       # determine container health for restarts and orchestration.
-      test: ["CMD", "curl", "-f", "http://localhost:8000/ || exit 1"]
+      # Use CMD-SHELL so shell operators like || work, and use 127.0.0.1 inside container
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
