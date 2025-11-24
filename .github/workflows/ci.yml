@@ -104,9 +104,18 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f hello_world/requirements.txt ]; then pip install -r hello_world/requirements.txt; fi
 
-      - name: Run hello script
+      - name: Run hello script (background + smoke test)
         working-directory: hello_world
-        run: python hello.py
+        run: |
+          # start server in background, smoke-test it, then stop it so CI step doesn't hang
+          python hello.py &
+          SERVER_PID=$!
+          # give server a moment to start
+          sleep 2
+          # try connecting a few times in case server needs more time
+          curl --retry 5 --retry-delay 1 --fail http://127.0.0.1:8000/
+          # cleanup background server (best-effort)
+          kill $SERVER_PID || true
 
   deploy:
     needs: build
