@@ -52,6 +52,8 @@ jobs:
 
   build:
     needs: [security-scan, code-quality]
+    outputs:
+      version_tag: ${{ steps.meta.outputs.version_tag }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -87,15 +89,54 @@ jobs:
           echo "TAG1=ghcr.io/$IMAGE_OWNER/fordigitaocean-hello:$GITHUB_SHA"
           echo "TAG2=ghcr.io/$IMAGE_OWNER/fordigitaocean-hello:latest"
 
-      - name: Build and push Docker image to GHCR
+      - name: "✨ Generate Version String & Tag"
+        id: meta
         run: |
-          docker buildx build \
-            --platform linux/amd64,linux/arm64 \
-            --file hello_world/Dockerfile \
-            --push \
-            --tag ghcr.io/${IMAGE_OWNER}/fordigitaocean-hello:${GITHUB_SHA} \
-            --tag ghcr.io/${IMAGE_OWNER}/fordigitaocean-hello:latest \
-            hello_world
+          set -e
+          # VERSION_STRING: vYYYY.MM.DD-shortsha (matches reference)
+          VERSION_STRING="v$(date -u +%Y.%m.%d)-$(git rev-parse --short HEAD)"
+          VERSION_TAG="ghcr.io/${{ github.repository_owner }}/fordigitaocean-hello:${VERSION_STRING}"
+          echo "VERSION_STRING=${VERSION_STRING}" >> $GITHUB_ENV
+          echo "VERSION_TAG=${VERSION_TAG}" >> $GITHUB_ENV
+          # also set step output for job-level outputs
+          echo "version_tag=${VERSION_TAG}" >> $GITHUB_OUTPUT
+
+      - name: Determine image tags (date + optional semantic)
+        id: determine-tags
+        run: |
+          set -e
+          DATE=$(date -u +%Y%m%d)
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          echo "DATE=${DATE}" >> $GITHUB_ENV
+          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
+          # always create a date-based tag for quick identification
+          echo "TAG_DATE=ghcr.io/${IMAGE_OWNER}/fordigitaocean-hello:${DATE}-${SHORT_SHA}" >> $GITHUB_ENV
+          # also keep the SHA and latest tags
+          echo "TAG_SHA=ghcr.io/${IMAGE_OWNER}/fordigitaocean-hello:${GITHUB_SHA}" >> $GITHUB_ENV
+          echo "TAG_LATEST=ghcr.io/${IMAGE_OWNER}/fordigitaocean-hello:latest" >> $GITHUB_ENV
+          # if run triggered by a git tag, export semantic tag and semantic+date tag
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            echo "TAG_SEM=ghcr.io/${IMAGE_OWNER}/fordigitaocean-hello:${TAG_NAME}" >> $GITHUB_ENV
+            echo "TAG_SEM_DATE=ghcr.io/${IMAGE_OWNER}/fordigitaocean-hello:${TAG_NAME}-${DATE}" >> $GITHUB_ENV
+            echo "IS_TAG=1" >> $GITHUB_ENV
+            echo "Detected tag: ${TAG_NAME}"
+          else
+            echo "IS_TAG=0" >> $GITHUB_ENV
+          fi
+
+      - name: "Build and push Docker image to GHCR (multi-tag: sha/latest/date/version)"
+        run: |
+          set -e
+          # Buildx command with multiple tags: SHA, latest, date-based. Include semantic tags when present.
+          BUILD_CMD=(docker buildx build --platform linux/amd64,linux/arm64 --file hello_world/Dockerfile --push)
+          BUILD_CMD+=(--tag "${TAG_SHA}" --tag "${TAG_LATEST}" --tag "${VERSION_TAG}" --tag "${TAG_DATE}")
+          if [ "${IS_TAG:-0}" = "1" ] && [ -n "${TAG_SEM:-}" ]; then
+            BUILD_CMD+=(--tag "${TAG_SEM}" --tag "${TAG_SEM_DATE}")
+          fi
+          BUILD_CMD+=(hello_world)
+          echo "Running: ${BUILD_CMD[*]}"
+          "${BUILD_CMD[@]}"
         env:
           DOCKER_BUILDKIT: 1
 
@@ -132,6 +173,7 @@ jobs:
           port: 22
           script: |
             set -e
+            echo "Droplet User staging ${{ secrets.DROPLET_USER }}"
             # install docker if missing
             if ! command -v docker >/dev/null 2>&1; then
               sudo apt-get update
@@ -201,12 +243,13 @@ jobs:
       - name: Deploy to Staging Droplet via SSH
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: ${{ secrets.DROPLET_HOST }}
+          host: ${{ secrets.DROPLET_HOST_STAGING }}
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           port: 22
           script: |
             set -e
+            echo "Droplet User staging ${{ secrets.DROPLET_USER }}"
             # install docker if missing
             if ! command -v docker >/dev/null 2>&1; then
               sudo apt-get update
