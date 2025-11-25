@@ -95,7 +95,8 @@ jobs:
           set -e
           # VERSION_STRING: vYYYY.MM.DD-shortsha (matches reference)
           VERSION_STRING="v$(date -u +%Y.%m.%d)-$(git rev-parse --short HEAD)"
-          VERSION_TAG="ghcr.io/${{ github.repository_owner }}/fordigitaocean-hello:${VERSION_STRING}"
+          # Use IMAGE_OWNER (lowercased) set earlier to avoid invalid uppercase repo names
+          VERSION_TAG="ghcr.io/${IMAGE_OWNER}/fordigitaocean-hello:${VERSION_STRING}"
           echo "VERSION_STRING=${VERSION_STRING}" >> $GITHUB_ENV
           echo "VERSION_TAG=${VERSION_TAG}" >> $GITHUB_ENV
           # also set step output for job-level outputs
