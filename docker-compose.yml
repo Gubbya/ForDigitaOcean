@@ -41,7 +41,7 @@ services:
     depends_on:
       - hello
     networks:
-      - fordigitaocean_default
+      - default
 
 networks:
   default:
