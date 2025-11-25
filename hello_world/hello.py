@@ -2,7 +2,7 @@
 
 Notes:
 - This is intentionally minimal and not suitable for production workloads.
-- For production, run behind a real WSGI server (gunicorn/uvicorn) and reverse-proxy (nginx).
+- For production, run behind a real WSGI server (gunicorn/uvicorn) and optionally a reverse-proxy.
 - Do NOT serve repository files or secrets from this handler.
 """
 

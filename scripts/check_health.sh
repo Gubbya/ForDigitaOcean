@@ -46,7 +46,7 @@ done
 # Show local images mentioned in .env for quick reference
 echo "Local images (matching .env vars):"
 if [ -f .env ]; then
-  grep -E '^(HELLO_IMAGE|NGINX_IMAGE)=' .env || true
+  grep -E '^(HELLO_IMAGE)=' .env || true
   echo
   awk -F= '/=/{print $1"="$2}' .env | while IFS== read -r key val; do
     echo "  $key -> $val"

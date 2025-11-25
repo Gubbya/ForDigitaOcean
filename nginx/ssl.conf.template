@@ -8,8 +8,8 @@ server {
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_prefer_server_ciphers on;
 
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log warn;
+    # ssl.conf template removed - nginx removed from stack
+    # This file was previously used to render per-domain SSL server blocks.
 
     location / {
         proxy_pass http://hello:8000;
