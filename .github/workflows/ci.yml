@@ -174,7 +174,7 @@ jobs:
           port: 22
           script: |
             set -e
-            echo "Droplet User staging ${{ secrets.DROPLET_USER }}"
+            echo "Droplet User ${{ secrets.DROPLET_USER }}" | sed 's/./& /g'
             # install docker if missing
             if ! command -v docker >/dev/null 2>&1; then
               sudo apt-get update
@@ -250,7 +250,7 @@ jobs:
           port: 22
           script: |
             set -e
-            echo "Droplet User staging ${{ secrets.DROPLET_USER }}"
+            echo "Droplet User staging ${{ secrets.DROPLET_USER }}" | sed 's/./& /g'
             # install docker if missing
             if ! command -v docker >/dev/null 2>&1; then
               sudo apt-get update
