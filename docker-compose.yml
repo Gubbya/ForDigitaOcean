@@ -14,12 +14,9 @@ services:
     # service reachable directly on the host, add a `ports:` mapping like
     # `- "8000:8000"` under this service.
     expose:
-      - "8000"   # expose container port to other services on the same network
+      - "8000"
     restart: unless-stopped
     healthcheck:
-      # Use a simple HTTP healthcheck; Docker Compose will use this to
-      # determine container health for restarts and orchestration.
-      # Use CMD-SHELL so shell operators like || work, and use 127.0.0.1 inside container
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/ || exit 1"]
       interval: 30s
       timeout: 5s
@@ -28,12 +25,24 @@ services:
       - PORT=8000
     ports:
       - "8000:8000"
- 
+
+  nginx:
+    image: nginx:stable
+    container_name: fordigitaocean_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d:ro
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/webroot:/var/www/certbot
+      # - ./nginx/ssl:/etc/nginx/ssl         # uncomment if you add local certs
+      # - ./nginx/letsencrypt:/etc/letsencrypt  # uncomment if using certbot output
+    depends_on:
+      - hello
+    networks:
+      - fordigitaocean_default
 
 networks:
   default:
     name: fordigitaocean_default
-
-# Labels are used to provide metadata for each service image. They will be
-# populated from the `.env` file when present. Developers should pin images
-# by updating the variables in `.env` to a specific tag (e.g. `:v1.0.0`).
