@@ -21,6 +21,7 @@ class Handler(BaseHTTPRequestHandler):
     - GET: returns a small text response (200)
     - HEAD: same as GET but without body (200) — some health probes use HEAD
     Other methods will receive the default 501 response from BaseHTTPRequestHandler.
+    
     """
 
     def do_GET(self) -> None:
