@@ -26,6 +26,8 @@ services:
       retries: 3
     environment:
       - PORT=8000
+    ports:
+      - "8000:8000"
  
 
 networks:
