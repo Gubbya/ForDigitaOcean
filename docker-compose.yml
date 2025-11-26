@@ -36,7 +36,7 @@ services:
       - /opt/ForDigitaOcean/nginx:/etc/nginx/conf.d:ro
       - /opt/ForDigitaOcean/nginx/logs:/var/log/nginx
       - /opt/ForDigitaOcean/nginx/webroot:/var/www/certbot
-      # - /opt/ForDigitaOcean/nginx/ssl:/etc/nginx/ssl         # uncomment if you add local certs
+      - /opt/ForDigitaOcean/nginx/ssl:/etc/nginx/ssl:ro
       # - /opt/ForDigitaOcean/nginx/letsencrypt:/etc/letsencrypt  # uncomment if using certbot output
     depends_on:
       - hello
