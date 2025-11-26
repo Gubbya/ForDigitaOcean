@@ -23,6 +23,7 @@ Endpoints provided (examples):
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import os
 from urllib.parse import urlparse, parse_qs
+import time
 from typing import Optional
 
 # Optional dependencies
@@ -148,8 +149,18 @@ class Handler(BaseHTTPRequestHandler):
             if requests is None:
                 return self._write_text("requests not available in this process\n", 500)
             try:
-                r = requests.get("http://nginx/", timeout=5)
-                return self._write_text(f"nginx status:{r.status_code}\n")
+                # Retry a few times to avoid transient DNS/connect hiccups
+                attempts = 3
+                last_exc = None
+                for attempt in range(1, attempts + 1):
+                    try:
+                        r = requests.get("http://nginx/", timeout=5)
+                        return self._write_text(f"nginx status:{r.status_code}\n")
+                    except Exception as e:
+                        last_exc = e
+                        if attempt < attempts:
+                            time.sleep(0.5)
+                return self._write_text(f"nginx check failed after {attempts} attempts: {last_exc}\n", 502)
             except Exception as e:
                 return self._write_text(f"nginx check failed: {e}\n", 502)
 
