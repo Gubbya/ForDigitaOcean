@@ -37,3 +37,24 @@ This repository contains a GitHub Actions workflow (`.github/workflows/ci.yml`) 
 
 If you change deployment secrets or keys, rotate them and update GitHub Secrets.
 
+Real-time demo (Redis + Celery)
+--------------------------------
+This repository includes a small demo that shows how a Celery task can publish
+progress updates to Redis pub/sub and how a client can listen in real time.
+
+Quick start (using `docker-compose` in the repo root):
+
+```powershell
+# start services (hello, redis, celery worker/beat)
+docker-compose up -d redis celery-worker
+
+# run the demo script from the host (ensure Python deps installed)
+python .\hello_world\rt_demo.py
+```
+
+Notes:
+- The demo publishes progress messages to channel `task-progress:<task_id>`.
+- The demo script `hello_world/rt_demo.py` enqueues `long_task` and listens for updates.
+- If you run inside Docker, ensure the script runs in the same network as the `redis` service
+	(for example, by running it in the `hello` image or a helper container).
+

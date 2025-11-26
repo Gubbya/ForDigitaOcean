@@ -43,6 +43,49 @@ services:
     networks:
       - default
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - default
+
+  celery-worker:
+    image: ${HELLO_IMAGE:-ghcr.io/gubbya/fordigitaocean-hello:latest}
+    command: celery -A celery_app worker --loglevel=info
+    restart: unless-stopped
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    depends_on:
+      - redis
+    networks:
+      - default
+
+  celery-beat:
+    image: ${HELLO_IMAGE:-ghcr.io/gubbya/fordigitaocean-hello:latest}
+    command: celery -A celery_app beat --loglevel=info --pidfile=/tmp/celerybeat.pid
+    restart: unless-stopped
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+    volumes:
+      - ./hello_world/celerybeat-schedule:/var/lib/celery
+    depends_on:
+      - redis
+    networks:
+      - default
+
+volumes:
+  redis-data:
+
 networks:
   default:
-    name: fordigitaocean_default
+    external:
+      name: fordigitaocean_default
