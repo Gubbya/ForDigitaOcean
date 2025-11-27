@@ -1,0 +1,20 @@
+
+nginx
+http://139.59.88.130/
+http://139.59.88.130/_health
+currently 
+
+http://139.59.88.130/redis-set?key=()&value=()
+ex:
+http://139.59.88.130:8000/redis-set?key=Supriya&value=Pradeep
+o/p: OK set Supriya
+
+http://139.59.88.130/redis-get
+http://139.59.88.130:8000/redis-get?key=Supriya
+
+http://139.59.88.130/
+http://139.59.88.130/
+http://139.59.88.130/
+http://139.59.88.130/
+http://139.59.88.130/
+http://139.59.88.130/

@@ -75,7 +75,16 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(code)
         self.send_header("Content-type", "text/plain; charset=utf-8")
         self.end_headers()
-        self.wfile.write(text.encode("utf-8"))
+        try:
+            self.wfile.write(text.encode("utf-8"))
+        except BrokenPipeError:
+            # Peer closed connection (common when a reverse proxy times out or client disconnects).
+            # Swallow this to avoid noisy traceback logs; no further action required.
+            return
+        except Exception as e:
+            # Log unexpected write errors and continue.
+            print(f"write error: {e}")
+            return
 
     def do_HEAD(self) -> None:
         self.send_response(200)
@@ -149,17 +158,21 @@ class Handler(BaseHTTPRequestHandler):
             if requests is None:
                 return self._write_text("requests not available in this process\n", 500)
             try:
-                # Retry a few times to avoid transient DNS/connect hiccups
-                attempts = 3
+                # Retry a few times to avoid transient DNS/connect hiccups.
+                # Make attempts and timeout configurable via environment variables so
+                # transient network issues can be tuned without changing code.
+                attempts = int(os.getenv("CHECK_NGINX_ATTEMPTS", "3"))
+                timeout = float(os.getenv("CHECK_NGINX_TIMEOUT", "5"))
+                retry_delay = float(os.getenv("CHECK_NGINX_RETRY_DELAY", "0.5"))
                 last_exc = None
                 for attempt in range(1, attempts + 1):
                     try:
-                        r = requests.get("http://nginx/", timeout=5)
+                        r = requests.get("http://nginx/", timeout=timeout)
                         return self._write_text(f"nginx status:{r.status_code}\n")
                     except Exception as e:
                         last_exc = e
                         if attempt < attempts:
-                            time.sleep(0.5)
+                            time.sleep(retry_delay)
                 return self._write_text(f"nginx check failed after {attempts} attempts: {last_exc}\n", 502)
             except Exception as e:
                 return self._write_text(f"nginx check failed: {e}\n", 502)

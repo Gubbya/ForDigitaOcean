@@ -246,7 +246,7 @@ jobs:
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.DROPLET_HOST_STAGING }}
-          username: ${{ secrets.DROPLET_USER }}
+          username: ${{ secrets.DROPLET_USER_STAGING }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           port: 22
           script: |
