@@ -12,9 +12,12 @@ o/p: OK set Supriya
 http://139.59.88.130/redis-get
 http://139.59.88.130:8000/redis-get?key=Supriya
 
-http://139.59.88.130/
-http://139.59.88.130/
-http://139.59.88.130/
-http://139.59.88.130/
-http://139.59.88.130/
-http://139.59.88.130/
+/task-add
+http://139.59.88.130:8000/task-add?a=1&b=6120
+
+/task-result
+http://139.59.88.130/task-result?id=<id>
+
+http://139.59.88.130:8000/task-result?id=de3142c6-d93c-4965-8b81-1add279b247a
+
+

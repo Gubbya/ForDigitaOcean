@@ -251,7 +251,7 @@ jobs:
           port: 22
           script: |
             set -e
-            echo "Droplet User staging ${{ secrets.DROPLET_USER }}" | sed 's/./& /g'
+            echo "Droplet User staging ${{ secrets.DROPLET_USER_STAGING }}" | sed 's/./& /g'
             # Use the exact image tag produced by the build job (injected at workflow runtime)
             VERSION_TAG="${{ needs.build.outputs.version_tag }}"
             echo "Using VERSION_TAG=${VERSION_TAG}"
@@ -296,6 +296,8 @@ jobs:
             install_docker_if_needed
 
             APP_DIR=/opt/ForDigitaOcean
+            # ensure git treats this directory as safe when ownership differs
+            git config --global --add safe.directory "$APP_DIR" || true
             if [ -d "$APP_DIR" ]; then
               cd "$APP_DIR"
               git fetch --all

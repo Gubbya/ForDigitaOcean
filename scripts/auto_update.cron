@@ -1,0 +1,4 @@
+# Cron file for `auto_update.sh` (install to `/etc/cron.d/auto_update`)
+# Format: m h dom mon dow user command
+# Runs daily at 09:00 as root
+0 9 * * * root /usr/local/bin/auto_update.sh >> /var/log/auto_update.log 2>&1
