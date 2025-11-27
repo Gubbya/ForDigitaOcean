@@ -45,7 +45,7 @@ services:
       - default
 
   certbot:
-    image: certbot/certbot:stable
+    image: certbot/certbot:latest
     container_name: fordigitaocean_certbot
     volumes:
       - /opt/ForDigitaOcean/nginx/letsencrypt:/etc/letsencrypt
