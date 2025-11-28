@@ -1,3 +1,16 @@
+Production for Wello World
+143.110.246.189
+
+New Staging
+159.89.170.77
+
+Old Staging
+139.59.88.130
+
+
+DROPLET_USER_NEW_-STAGING testadmin
+
+
 
 nginx
 http://139.59.88.130/

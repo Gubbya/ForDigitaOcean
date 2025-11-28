@@ -34,11 +34,11 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - /opt/ForDigitaOcean/nginx:/etc/nginx/conf.d:ro
-      - /opt/ForDigitaOcean/nginx/logs:/var/log/nginx
-      - /opt/ForDigitaOcean/nginx/webroot:/var/www/certbot
-      - /opt/ForDigitaOcean/nginx/ssl:/etc/nginx/ssl:ro
-      - /opt/ForDigitaOcean/nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx:/etc/nginx/conf.d:ro
+      - ./nginx/logs:/var/log/nginx
+      - ./nginx/webroot:/var/www/certbot
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/letsencrypt:/etc/letsencrypt
     depends_on:
       - hello
     networks:
@@ -48,8 +48,8 @@ services:
     image: certbot/certbot:latest
     container_name: fordigitaocean_certbot
     volumes:
-      - /opt/ForDigitaOcean/nginx/letsencrypt:/etc/letsencrypt
-      - /opt/ForDigitaOcean/nginx/webroot:/var/www/certbot
+      - ./nginx/letsencrypt:/etc/letsencrypt
+      - ./nginx/webroot:/var/www/certbot
     entrypoint: ["/bin/sh", "-c", "while :; do sleep 12h & wait $${!}; certbot renew --webroot -w /var/www/certbot --noninteractive --quiet || true; done"]
     restart: unless-stopped
     networks:

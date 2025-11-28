@@ -189,7 +189,7 @@ jobs:
               sudo apt-get install -y docker-compose-plugin
             fi
 
-            APP_DIR=/opt/ForDigitaOcean
+            APP_DIR=/var/www/ForDigitaOcean
             if [ -d "$APP_DIR" ]; then
               cd "$APP_DIR"
               git fetch --all
@@ -197,6 +197,12 @@ jobs:
             else
               git clone https://github.com/Gubbya/ForDigitaOcean.git "$APP_DIR"
               cd "$APP_DIR"
+            fi
+
+            # prepare host directories for nginx/certbot if helper script present
+            if [ -f ./scripts/prepare_deploy_dirs.sh ]; then
+              chmod +x ./scripts/prepare_deploy_dirs.sh || true
+              ./scripts/prepare_deploy_dirs.sh . || true
             fi
 
             # login to GHCR if provided
@@ -295,7 +301,7 @@ jobs:
 
             install_docker_if_needed
 
-            APP_DIR=/opt/ForDigitaOcean
+            APP_DIR=/var/www/ForDigitaOcean
             # ensure git treats this directory as safe when ownership differs
             git config --global --add safe.directory "$APP_DIR" || true
             if [ -d "$APP_DIR" ]; then
@@ -308,6 +314,12 @@ jobs:
               git clone https://github.com/Gubbya/ForDigitaOcean.git "$APP_DIR"
               cd "$APP_DIR"
               git checkout -f staging || true
+            fi
+
+            # prepare host directories for nginx/certbot if helper script present
+            if [ -f ./scripts/prepare_deploy_dirs.sh ]; then
+              chmod +x ./scripts/prepare_deploy_dirs.sh || true
+              ./scripts/prepare_deploy_dirs.sh . || true
             fi
 
             # login to GHCR if provided
